@@ -440,6 +440,7 @@ public class AzureManagementServiceDelegate {
 	 * @param template
 	 * @throws Exception
 	 */
+
 	public static void setVirtualMachineDetails(AzureSlave azureSlave, AzureSlaveTemplate template) throws Exception {
 		AzureCloud azureCloud = template.getAzureCloud();
 		Configuration config = ServiceDelegateHelper.loadConfiguration(azureCloud.getSubscriptionId(),
@@ -449,9 +450,16 @@ public class AzureManagementServiceDelegate {
 				azureSlave.getDeploymentName());
 
 		// Getting the first virtual IP
-		azureSlave.setPublicDNSName(response.getRoleInstances().get(0).getIPAddress().getHostAddress());
-		azureSlave.setSshPort(22);
-		//azureSlave.setPublicDNSName(response.getVirtualIPAddresses().get(0).getAddress().getHostAddress());
+		ArrayList<RoleInstance> instances = response.getRoleInstances();
+		for(RoleInstance instance : instances)
+		{
+			if(instance.getRoleName().equals(azureSlave.getNodeName()))
+			{
+				azureSlave.setPublicDNSName(instance.getIPAddress().getHostAddress());
+				azureSlave.setSshPort(22);
+				break;
+			}
+		}
 	}
 	
 	public static boolean isVirtualMachineExists(AzureSlave slave) {
@@ -907,23 +915,6 @@ public class AzureManagementServiceDelegate {
 		ArrayList<InputEndpoint> enpoints = new ArrayList<InputEndpoint>();
 		networkConfigset.setInputEndpoints(enpoints);
 		
-		// Add SSH endpoint if launch method is SSH
-		if (Constants.LAUNCH_METHOD_SSH.equalsIgnoreCase(template.getSlaveLaunchMethod())) {
-			InputEndpoint sshPort = new InputEndpoint();
-			enpoints.add(sshPort);
-			sshPort.setName(Constants.EP_SSH_NAME);
-			sshPort.setProtocol(Constants.PROTOCOL_TCP);
-			sshPort.setLocalPort(Constants.DEFAULT_SSH_PORT);
-		}
-		
-		// In case if OStype is windows add RDP endpoint as well
-		if (Constants.OS_TYPE_WINDOWS.equalsIgnoreCase(osType)) {
-			InputEndpoint rdpPort = new InputEndpoint();
-			enpoints.add(rdpPort);
-			rdpPort.setName(Constants.EP_RDP_NAME);
-			rdpPort.setProtocol(Constants.PROTOCOL_TCP);
-			rdpPort.setLocalPort(Constants.DEFAULT_RDP_PORT);
-		}
 		
 		if (AzureUtil.isNotNull(template.getVirtualNetworkName()) && 
 				AzureUtil.isNotNull(template.getSubnetName())) {
