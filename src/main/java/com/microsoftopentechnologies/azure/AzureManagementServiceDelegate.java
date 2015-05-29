@@ -442,29 +442,16 @@ public class AzureManagementServiceDelegate {
 	 */
 	public static void setVirtualMachineDetails(AzureSlave azureSlave, AzureSlaveTemplate template) throws Exception {
 		AzureCloud azureCloud = template.getAzureCloud();
-		Configuration config = ServiceDelegateHelper.loadConfiguration(azureCloud.getSubscriptionId(), 
+		Configuration config = ServiceDelegateHelper.loadConfiguration(azureCloud.getSubscriptionId(),
 				azureCloud.getServiceManagementCert(), azureCloud.getPassPhrase(), azureCloud.getServiceManagementURL());
 		ComputeManagementClient client = ServiceDelegateHelper.getComputeManagementClient(config);
-		DeploymentGetResponse response = client.getDeploymentsOperations().getByName(azureSlave.getCloudServiceName(), 
+		DeploymentGetResponse response = client.getDeploymentsOperations().getByName(azureSlave.getCloudServiceName(),
 				azureSlave.getDeploymentName());
-		
+
 		// Getting the first virtual IP
-		azureSlave.setPublicDNSName(response.getVirtualIPAddresses().get(0).getAddress().getHostAddress());
-
-		ArrayList<RoleInstance> instances = response.getRoleInstances();
-		for (RoleInstance roleInstance : instances) {
-			if (roleInstance.getRoleName().equals(azureSlave.getNodeName())) {
-				ArrayList<InstanceEndpoint> endPoints = roleInstance.getInstanceEndpoints();
-
-				for (InstanceEndpoint endPoint : endPoints) {
-					if (endPoint.getLocalPort() == Constants.DEFAULT_SSH_PORT) {
-						azureSlave.setSshPort(endPoint.getPort());
-						break;
-					}
-				}
-				break;
-			}
-		}
+		azureSlave.setPublicDNSName(response.getRoleInstances().get(0).getIPAddress().getHostAddress());
+		azureSlave.setSshPort(22);
+		//azureSlave.setPublicDNSName(response.getVirtualIPAddresses().get(0).getAddress().getHostAddress());
 	}
 	
 	public static boolean isVirtualMachineExists(AzureSlave slave) {
